@@ -3,7 +3,11 @@ import os
 from pathlib import Path
 from typing import Union
 
-from foundrytools_cli_ng.utils.logger import logger
+
+class StylesMappingHandlerError(Exception):
+    """
+    An exception class for the StylesMappingHandler
+    """
 
 
 class StylesMappingHandler:
@@ -14,7 +18,9 @@ class StylesMappingHandler:
     def __init__(self, input_path: Path):
         self.file = Path.joinpath(input_path, ".ftCLI", "styles_mapping.json")
         if not self.file.exists():
+            self.file.touch()
             self.reset_defaults()
+        self.data = self.get_data()  # Load the data from the file
 
     def get_data(self) -> dict[str, Union[dict[int, list[str]], list[str]]]:
         """
@@ -25,14 +31,10 @@ class StylesMappingHandler:
         try:
             with self.file.open(encoding="utf-8") as f:
                 return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            logger.error(f"An error occurred while reading the file: {self.file}: {e}")
-            return {}
-        except RuntimeError as e:
-            logger.error(f"An unexpected error occurred: {e}")
-            return {}
+        except Exception as e:
+            raise StylesMappingHandlerError(f"An error occurred while reading the file: {self.file}: {e}")
 
-    def save(self, data: dict) -> None:
+    def save_to_file(self, data: dict) -> None:
         """
         Saves the styles mapping file
 
@@ -42,24 +44,20 @@ class StylesMappingHandler:
         temp_file = self.file.with_suffix(".tmp")
         try:
             self.file.parent.mkdir(exist_ok=True)
+            temp_file.touch()
             temp_file.write_text(json.dumps(data, ensure_ascii=False, sort_keys=True, indent=4))
-            os.replace(self.file, temp_file)
-        except OSError as e:
-            print(f"An error occurred while saving the file: {e}")
+            os.replace(temp_file, self.file)
+        except Exception as e:
             if temp_file.exists():
                 temp_file.unlink()
+            raise StylesMappingHandlerError(f"An error occurred while saving the file: {e}")
 
     def reset_defaults(self) -> None:
         """
         Writes the default values to the styles mapping file
         """
-        default_data = {
-            "weights": _DEFAULT_WEIGHTS,
-            "widths": _DEFAULT_WIDTHS,
-            "italics": _DEFAULT_ITALICS,
-            "obliques": _DEFAULT_OBLIQUES,
-        }
-        self.save(default_data)
+        self.data = _DEFAULT_DATA
+        self.save_to_file(_DEFAULT_DATA)
 
 
 _DEFAULT_WEIGHTS = {
@@ -92,3 +90,10 @@ _DEFAULT_WIDTHS = {
 _DEFAULT_ITALICS = ["It", "Italic"]
 
 _DEFAULT_OBLIQUES = ["Obl", "Oblique"]
+
+_DEFAULT_DATA = {
+    "weights": _DEFAULT_WEIGHTS,
+    "widths": _DEFAULT_WIDTHS,
+    "italics": _DEFAULT_ITALICS,
+    "obliques": _DEFAULT_OBLIQUES,
+}

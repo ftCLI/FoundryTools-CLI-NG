@@ -1,5 +1,6 @@
 import click
 
+from foundrytools_cli_ng.commands.assistant import cli as assistant
 from foundrytools_cli_ng.commands.cff import cli as cff
 from foundrytools_cli_ng.commands.cmap import cli as cmap
 from foundrytools_cli_ng.commands.converter import cli as converter
@@ -19,6 +20,7 @@ from foundrytools_cli_ng.commands.utils import cli as utils
 @click.group(
     help="A collection of command line tools for working with font files.",
     commands={
+        "assistant": assistant,
         "cff": cff,
         "cmap": cmap,
         "converter": converter,
