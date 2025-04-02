@@ -1,5 +1,4 @@
 import json
-import shutil
 from pathlib import Path
 
 from pydantic import BaseModel, ValidationError, field_validator
@@ -11,22 +10,38 @@ class StylesMapping(BaseModel):
     italics: list[str]
     obliques: list[str]
 
+    @field_validator("weights", mode="before")
+    def check_weights_keys(cls, v):
+        v = {int(k): val for k, val in v.items()}
+        for key in v.keys():
+            if not (1 <= key <= 1000):
+                raise ValueError(f"Weight key {key} must be an integer between 1 and 1000.")
+        return v
+
+    @field_validator("widths", mode="before")
+    def check_widths_keys(cls, v):
+        v = {int(k): val for k, val in v.items()}
+        for key in v.keys():
+            if not (1 <= key <= 9):
+                raise ValueError(f"Width key {key} must be an integer between 1 and 9.")
+        return v
+
     @field_validator("weights", "widths", mode="before")
     def check_length(cls, v, field):
         for key, value in v.items():
-            if len(value) != 2:
-                raise ValueError(f"Each entry in {field.name} must have exactly two items.")
+            if not isinstance(value, list) or len(value) != 2:
+                raise ValueError(f"Each entry in {field} must have exactly two items.")
         return v
 
     @field_validator("italics", "obliques", mode="before")
     def check_italics_obliques_length(cls, v, field):
-        if len(v) != 2:
+        if not isinstance(v, list) or len(v) != 2:
             raise ValueError(f"{field.name.capitalize()} must have exactly two items.")
         return v
 
 
-class StylesMappingHandlerError(Exception):
-    """An exception class for the StylesMappingHandler"""
+class StylesMappingError(Exception):
+    """An exception class for the StylesMapping"""
 
 
 class StylesMappingHandler:
@@ -38,7 +53,8 @@ class StylesMappingHandler:
             self.file.parent.mkdir(exist_ok=True, parents=True)
             self.file.touch()
             self.reset_defaults()
-        self.data = self.read_file()
+        else:
+            self.data = self.read_file()
 
     def read_file(self) -> StylesMapping:
         """Opens the styles mapping file and returns its data as a dictionary"""
@@ -46,10 +62,10 @@ class StylesMappingHandler:
             with self.file.open(encoding="utf-8") as f:
                 data = json.load(f)
                 return StylesMapping(**data)
-        except ValidationError as e:
-            raise StylesMappingHandlerError(f"Pydantic validation error: {e}") from e
+        except (ValidationError, ValueError) as e:
+            raise StylesMappingError(f"Pydantic validation error: {e}") from e
         except Exception as e:
-            raise StylesMappingHandlerError(
+            raise StylesMappingError(
                 f"An error occurred while reading the file: {self.file}: {e}"
             ) from e
 
@@ -57,15 +73,14 @@ class StylesMappingHandler:
         """Saves the styles mapping file"""
         temp_file = self.file.with_suffix(".tmp")
         try:
-            with temp_file.open("w", encoding="utf-8") as f:
-                json_data = data.model_dump_json()
-                formatted_json = json.dumps(json.loads(json_data), indent=4, ensure_ascii=False)
-                f.write(formatted_json)
-            shutil.move(temp_file, self.file)
+            json_data = data.model_dump_json()
+            formatted_json = json.dumps(json.loads(json_data), indent=4, ensure_ascii=False)
+            temp_file.write_text(formatted_json, encoding="utf-8")
+            temp_file.rename(self.file)
         except Exception as e:
             if temp_file.exists():
                 temp_file.unlink()
-            raise StylesMappingHandlerError(f"An error occurred while saving the file: {e}") from e
+            raise StylesMappingError(f"An error occurred while saving the file: {e}") from e
 
     def reset_defaults(self) -> None:
         """Writes the default values to the styles mapping file"""
