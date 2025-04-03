@@ -1,43 +1,13 @@
 import json
 from pathlib import Path
+from typing import Literal
 
-from pydantic import BaseModel, ValidationError, field_validator
-
-
-class StylesMapping(BaseModel):
-    weights: dict[int, list[str]]
-    widths: dict[int, list[str]]
-    italics: list[str]
-    obliques: list[str]
-
-    @field_validator("weights", mode="before")
-    def check_weights_keys(cls, v):
-        v = {int(k): val for k, val in v.items()}
-        for key in v.keys():
-            if not (1 <= key <= 1000):
-                raise ValueError(f"Weight key {key} must be an integer between 1 and 1000.")
-        return v
-
-    @field_validator("widths", mode="before")
-    def check_widths_keys(cls, v):
-        v = {int(k): val for k, val in v.items()}
-        for key in v.keys():
-            if not (1 <= key <= 9):
-                raise ValueError(f"Width key {key} must be an integer between 1 and 9.")
-        return v
-
-    @field_validator("weights", "widths", mode="before")
-    def check_length(cls, v, field):
-        for key, value in v.items():
-            if not isinstance(value, list) or len(value) != 2:
-                raise ValueError(f"Each entry in {field} must have exactly two items.")
-        return v
-
-    @field_validator("italics", "obliques", mode="before")
-    def check_italics_obliques_length(cls, v, field):
-        if not isinstance(v, list) or len(v) != 2:
-            raise ValueError(f"{field.name.capitalize()} must have exactly two items.")
-        return v
+from foundrytools.constants import (
+    MAX_US_WEIGHT_CLASS,
+    MAX_US_WIDTH_CLASS,
+    MIN_US_WEIGHT_CLASS,
+    MIN_US_WIDTH_CLASS,
+)
 
 
 class StylesMappingError(Exception):
@@ -48,43 +18,81 @@ class StylesMappingHandler:
     """A class to handle the styles mapping file"""
 
     def __init__(self, input_path: Path):
-        self.file = Path.joinpath(input_path, ".ftCLI", "styles_mapping.json")
-        if not self.file.exists():
-            self.file.parent.mkdir(exist_ok=True, parents=True)
-            self.file.touch()
-            self.reset_defaults()
-        else:
+        self.file = input_path / ".ftCLI" / "styles_mapping.json"
+        try:
             self.data = self.read_file()
+        except StylesMappingError:
+            self.reset_defaults()
 
-    def read_file(self) -> StylesMapping:
+    def read_file(self) -> dict:
         """Opens the styles mapping file and returns its data as a dictionary"""
         try:
             with self.file.open(encoding="utf-8") as f:
                 data = json.load(f)
-                return StylesMapping(**data)
-        except (ValidationError, ValueError) as e:
-            raise StylesMappingError(f"Pydantic validation error: {e}") from e
+                return data
         except Exception as e:
-            raise StylesMappingError(
-                f"An error occurred while reading the file: {self.file}: {e}"
-            ) from e
+            raise StylesMappingError(f"Error reading the file {self.file}: {e}") from e
 
-    def save_to_file(self, data: StylesMapping) -> None:
+    def save_to_file(self, data: dict) -> None:
         """Saves the styles mapping file"""
         temp_file = self.file.with_suffix(".tmp")
         try:
-            json_data = data.model_dump_json()
-            formatted_json = json.dumps(json.loads(json_data), indent=4, ensure_ascii=False)
-            temp_file.write_text(formatted_json, encoding="utf-8")
+            self.file.parent.mkdir(exist_ok=True, parents=True)
+            self.file.touch(exist_ok=True)
+            temp_file.write_text(json.dumps(data, indent=4), encoding="utf-8")
+            if self.file.exists():
+                self.file.unlink()
             temp_file.rename(self.file)
         except Exception as e:
-            if temp_file.exists():
-                temp_file.unlink()
+            temp_file.unlink(missing_ok=True)
             raise StylesMappingError(f"An error occurred while saving the file: {e}") from e
 
     def reset_defaults(self) -> None:
         """Writes the default values to the styles mapping file"""
         self.data = _DEFAULT_DATA
+        self.save_to_file(self.data)
+
+    def set_weight(self, weight: int, names: list[str]) -> None:
+        """Adds a weight to the styles mapping file"""
+        if not MIN_US_WEIGHT_CLASS <= weight <= MAX_US_WEIGHT_CLASS:
+            raise StylesMappingError(
+                f"Weight {weight} is out of range ({MIN_US_WEIGHT_CLASS}, {MAX_US_WEIGHT_CLASS})"
+            )
+        if len(names) != 2:
+            raise StylesMappingError("Names list must contain exactly 2 names")
+        self.data["weights"][weight] = sorted(names, key=len)
+        self.save_to_file(self.data)
+
+    def set_width(self, width: int, names: list[str]) -> None:
+        """Adds a width to the styles mapping file"""
+        if not MIN_US_WIDTH_CLASS <= width <= MAX_US_WIDTH_CLASS:
+            raise StylesMappingError(
+                f"Width {width} is out of range ({MIN_US_WIDTH_CLASS}, {MAX_US_WIDTH_CLASS})"
+            )
+        if len(names) != 2:
+            raise StylesMappingError("Names list must contain exactly 2 names")
+        self.data["widths"][width] = sorted(names, key=len)
+        self.save_to_file(self.data)
+
+    def set_slope(self, slope: Literal["italic", "oblique"], names: list[str]) -> None:
+        """Adds a slope to the styles mapping file"""
+        if len(names) != 2:
+            raise StylesMappingError("Names list must contain exactly 2 names")
+        self.data["slopes"][slope] = sorted(names, key=len)
+        self.save_to_file(self.data)
+
+    def del_weight(self, weight: int) -> None:
+        """Deletes a weight from the styles mapping file"""
+        if weight not in self.data["weights"]:
+            raise StylesMappingError(f"Weight {weight} not found in the styles mapping file")
+        del self.data["weights"][weight]
+        self.save_to_file(self.data)
+
+    def del_width(self, width: int) -> None:
+        """Deletes a width from the styles mapping file"""
+        if width not in self.data["widths"]:
+            raise StylesMappingError(f"Width {width} not found in the styles mapping file")
+        del self.data["widths"][width]
         self.save_to_file(self.data)
 
 
@@ -115,13 +123,13 @@ _DEFAULT_WIDTHS = {
     9: ["Exp", "Expanded"],
 }
 
-_DEFAULT_ITALICS = ["It", "Italic"]
+_DEFAULT_SLOPES = {
+    "italic": ["It", "Italic"],
+    "oblique": ["Ob", "Oblique"],
+}
 
-_DEFAULT_OBLIQUES = ["Obl", "Oblique"]
-
-_DEFAULT_DATA = StylesMapping(
-    weights=_DEFAULT_WEIGHTS,
-    widths=_DEFAULT_WIDTHS,
-    italics=_DEFAULT_ITALICS,
-    obliques=_DEFAULT_OBLIQUES,
-)
+_DEFAULT_DATA = {
+    "weights": _DEFAULT_WEIGHTS,
+    "widths": _DEFAULT_WIDTHS,
+    "slopes": _DEFAULT_SLOPES,
+}

@@ -15,6 +15,6 @@ def init_assistant(input_path: Path) -> None:
     Initialize the name table of a font.
     """
     styles_mapping = StylesMappingHandler(input_path)
-    styles_mapping.data.weights[1200] = ["Blackz", "Blackest"]
+    styles_mapping.data["weights"][1200] = ["Blackz", "Blackest"]
     styles_mapping.save_to_file(styles_mapping.data)
     logger.info("Styles mapping file initialized.")
