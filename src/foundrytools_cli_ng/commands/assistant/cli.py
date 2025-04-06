@@ -23,5 +23,6 @@ def init_mapping(input_path: Path) -> None:
 
     styles_mapping_handler = StylesMappingHandler(input_path)
     styles_mapping_handler.reset_defaults()
+    # display_flexible_style_permutations(input_path)
 
     logger.info(f"Styles mapping file created at {styles_mapping_file}")
