@@ -1,4 +1,4 @@
-name: mypy
+name: lint
 
 on: [push]
 
