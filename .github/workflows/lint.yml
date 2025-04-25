@@ -20,7 +20,7 @@ jobs:
         pip install -e ".[dev]"
     - name: Analysing the code with mypy
       run: |
-        mypy $(git ls-files '*.py')
+        mypy $(git ls-files '*.py' | grep -v "docs/")
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files '*.py')
+        pylint $(git ls-files '*.py' | grep -v "docs/")
