@@ -16,7 +16,7 @@ release = "2.0.0"
 
 extensions = ["sphinx_click"]
 
-exclude_patterns = []
+exclude_patterns: list[str] = []
 
 
 # -- Options for HTML output -------------------------------------------------
