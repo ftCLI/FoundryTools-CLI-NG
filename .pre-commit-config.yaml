@@ -7,10 +7,10 @@ repos:
     hooks:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
-    -   id: check-yaml
     -   id: check-added-large-files
     -   id: check-json
-    -   id: requirements-txt-fixer
+    -   id: check-toml
+    -   id: check-yaml
 
 -   repo: https://github.com/hhatto/autopep8
     rev: v2.3.2
@@ -25,7 +25,7 @@ repos:
         args: [--py39-plus]
 
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.6
+    rev: v0.11.7
     hooks:
     -   id: ruff
         args: [--fix]

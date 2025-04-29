@@ -1,10 +1,7 @@
 afdko==4.0.2
 click==8.1.8
-fonttools==4.56.0
 foundrytools==0.1.4
 loguru==0.7.3
 pathvalidate==3.2.3
-pydantic==2.11.1
 rich==14.0.0
-setuptools==77.0.3
 win32-setctime==1.2.0; sys_platform == 'win32'

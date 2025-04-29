@@ -1,4 +1,4 @@
-name: mypy
+name: lint
 
 on: [push]
 
@@ -17,8 +17,10 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install mypy
-        pip install -r requirements.txt
+        pip install -e ".[dev]"
     - name: Analysing the code with mypy
       run: |
-        mypy $(git ls-files '*.py')
+        mypy $(git ls-files '*.py' | grep -v "docs/")
+    - name: Analysing the code with pylint
+      run: |
+        pylint $(git ls-files '*.py' | grep -v "docs/")
