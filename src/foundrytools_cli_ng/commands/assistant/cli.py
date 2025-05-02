@@ -23,15 +23,4 @@ def init_mapping(input_path: Path) -> None:
 
     styles_mapping_handler = StylesMappingHandler(input_path)
     styles_mapping_handler.reset_defaults()
-    perms = styles_mapping_handler.generate_style_permutations()
-    print("Generated style permutations:")
-    for perm in perms.items():
-        print(f"  {perm}")
-
-    file_name = "ObExpandedUlt"
-
-    for style in perms:
-        if style.lower() == file_name.lower():
-            print(f"Found a match! {style}")
-
     logger.info(f"Styles mapping file created at {styles_mapping_file}")
