@@ -3,7 +3,7 @@ from pathlib import Path
 import click
 
 from foundrytools_cli_ng.commands.assistant.styles_mapping import (
-    StylesMappingHandler,
+    StylesMappingHandler, StylesMappingError
 )
 from foundrytools_cli_ng.utils.logger import logger
 
@@ -22,5 +22,15 @@ def init_mapping(input_path: Path) -> None:
         click.confirm("Do you want to overwrite the existing styles mapping file?", abort=True)
 
     styles_mapping_handler = StylesMappingHandler(input_path)
-    styles_mapping_handler.reset_defaults()
-    logger.info(f"Styles mapping file created at {styles_mapping_file}")
+    try:
+        styles_mapping_handler.reset_defaults()
+        logger.info(f"Styles mapping file created at {styles_mapping_file}")
+    except StylesMappingError as e:
+        logger.error(f"Error creating styles mapping file: {e}")
+        raise click.Abort()
+    try:
+        styles_mapping_handler.set_weight(1080, ["Th", "Thin"])
+        logger.info("Weight set successfully")
+    except StylesMappingError as e:
+        logger.error(f"Error setting weight: {e}")
+

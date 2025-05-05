@@ -67,26 +67,30 @@ class StylesMappingHandler:
         if not min_value <= value <= max_value:
             raise StylesMappingError(f"Value {value} is out of range ({min_value}, {max_value})")
 
+    def _validate_and_set(
+        self, key: str, value: int, names: list[str], min_value: int, max_value: int
+    ) -> None:
+        self._validate_range(value, min_value, max_value)
+        self._validate_names(names)
+        self.data[key][value] = sorted(names, key=len)
+        self.save_to_file(self.data)
+
     def set_weight(self, weight: int, names: list[str]) -> None:
         """
-        Adds a 'weight' entry to the styles mapping file.
+        Sets a 'weight' entry in the styles mapping data.
 
-        Validates the provided weight value and names list, then associates the names
-        with the specified weight in the styles mapping data. The names are sorted by
-        length before being saved.
+        Validates the provided names list and associates it with the specified weight in the styles
+        mapping data. The names are sorted by length before being saved.
 
         Args:
             weight (int): The weight value to add.
             names (list[str]): A list of two names associated with the weight.
 
         Raises:
-            StylesMappingError: If the weight is out of range or the names list does
-            not contain exactly two names.
+            StylesMappingError: If the names list does not contain exactly two names
+            or if the weight is out of the valid range.
         """
-        self._validate_range(weight, MIN_US_WEIGHT_CLASS, MAX_US_WEIGHT_CLASS)
-        self._validate_names(names)
-        self.data["weights"][weight] = sorted(names, key=len)
-        self.save_to_file(self.data)
+        self._validate_and_set("weights", weight, names, MIN_US_WEIGHT_CLASS, MAX_US_WEIGHT_CLASS)
 
     def del_weight(self, weight: int) -> None:
         """
@@ -108,24 +112,20 @@ class StylesMappingHandler:
 
     def set_width(self, width: int, names: list[str]) -> None:
         """
-        Sets a 'width' entry in the styles mapping file.
+        Sets a 'width' entry in the styles mapping data.
 
-        Validates the provided width value and names list, then associates the names
-        with the specified width in the styles mapping data. The names are sorted by
-        length before being saved.
+        Validates the provided names list and associates it with the specified width in the styles
+        mapping data. The names are sorted by length before being saved.
 
         Args:
             width (int): The width value to add.
             names (list[str]): A list of two names associated with the width.
 
         Raises:
-            StylesMappingError: If the width is out of range or the names list does
-            not contain exactly two names.
+            StylesMappingError: If the names list does not contain exactly two names
+            or if the width is out of the valid range.
         """
-        self._validate_range(width, MIN_US_WIDTH_CLASS, MAX_US_WIDTH_CLASS)
-        self._validate_names(names)
-        self.data["widths"][width] = sorted(names, key=len)
-        self.save_to_file(self.data)
+        self._validate_and_set("widths", width, names, MIN_US_WIDTH_CLASS, MAX_US_WIDTH_CLASS)
 
     def del_width(self, width: int) -> None:
         """
