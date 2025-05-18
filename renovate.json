@@ -5,7 +5,9 @@
   ],
   "packageRules": [
     {
-      "managers": ["pep621"],
+      "matchManagers": [
+        "pep621"
+      ],
       "enabled": true,
       "description": "Enable detection of optional dependencies in pyproject.toml"
     }
