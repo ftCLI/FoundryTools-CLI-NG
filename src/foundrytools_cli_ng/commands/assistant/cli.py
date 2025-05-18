@@ -3,7 +3,8 @@ from pathlib import Path
 import click
 
 from foundrytools_cli_ng.commands.assistant.styles_mapping import (
-    StylesMappingHandler, StylesMappingError
+    StylesMappingError,
+    StylesMappingHandler,
 )
 from foundrytools_cli_ng.utils.logger import logger
 
@@ -33,4 +34,3 @@ def init_mapping(input_path: Path) -> None:
         logger.info("Weight set successfully")
     except StylesMappingError as e:
         logger.error(f"Error setting weight: {e}")
-
