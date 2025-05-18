@@ -28,7 +28,7 @@ def init_mapping(input_path: Path) -> None:
         logger.info(f"Styles mapping file created at {styles_mapping_file}")
     except StylesMappingError as e:
         logger.error(f"Error creating styles mapping file: {e}")
-        raise click.Abort()
+        raise click.Abort() from e
     try:
         styles_mapping_handler.set_weight(1080, ["Th", "Thin"])
         logger.info("Weight set successfully")
