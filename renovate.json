@@ -3,22 +3,11 @@
   "extends": [
     "config:recommended"
   ],
-  "schedule": [
-    "every weekend"
-  ],
-  "groupName": "all dependencies",
-  "separateMajorMinor": false,
-  "groupSlug": "all",
   "packageRules": [
     {
-      "groupName": "all dependencies",
-      "groupSlug": "all",
-      "matchPackageNames": [
-        "*"
-      ]
+      "managers": ["pyproject"],
+      "enabled": true,
+      "description": "Enable detection of optional dependencies in pyproject.toml"
     }
-  ],
-  "lockFileMaintenance": {
-    "enabled": false
-  }
+  ]
 }
